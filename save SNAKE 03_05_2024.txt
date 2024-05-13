@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        canvas {
+            border: 1px solid #000;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="680" height="680"></canvas> <!-- Taille du canvas restée la même -->
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const blockSize = 68; // Taille des blocs doublée
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const snakeHeadUpImage = new Image();
+        snakeHeadUpImage.src = 'head_up.png';
+        const snakeHeadDownImage = new Image();
+        snakeHeadDownImage.src = 'head_down.png';
+        const snakeHeadLeftImage = new Image();
+        snakeHeadLeftImage.src = 'head_left.png';
+        const snakeHeadRightImage = new Image();
+        snakeHeadRightImage.src = 'head_right.png';
+        const snakeBodyLeftImage = new Image();
+        snakeBodyLeftImage.src = 'body_left.png';
+        const snakeBodyRightImage = new Image();
+        snakeBodyRightImage.src = 'body_right.png';
+        const snakeBodyUpImage = new Image();
+        snakeBodyUpImage.src = 'body_up.png';
+        const snakeBodyDownImage = new Image();
+        snakeBodyDownImage.src = 'body_down.png';
+
+        let snake = [{x: 5, y: 5}];
+        let apple = {x: Math.floor(Math.random() * (canvasWidth / blockSize)), y: Math.floor(Math.random() * (canvasHeight / blockSize))};
+        let direction = {x: 1, y: 0};
+        let score = 0;
+
+        // Variable pour garder une trace de la direction précédente
+        let previousDirection = {x: 1, y: 0};
+
+        function draw() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            drawSnake();
+
+            ctx.fillStyle = "red";
+            ctx.fillRect(apple.x * blockSize, apple.y * blockSize, blockSize, blockSize);
+
+            ctx.fillStyle = "#000";
+            ctx.font = "23px Arial"; // Taille de la police inchangée
+            ctx.fillText("Score: " + score, 15, 45); // Ajustement de la position du texte
+        }
+
+        function drawSnake() {
+            snake.forEach((segment, index) => {
+                let img;
+                if (index === 0) {
+                    img = getHeadImage();
+                } else {
+                    img = getBodyImage(index);
+                }
+                ctx.drawImage(img, segment.x * blockSize, segment.y * blockSize, blockSize, blockSize);
+            });
+        }
+
+        function getHeadImage() {
+            // Sélectionnez l'image de la tête en fonction de la direction
+            if (direction.y === -1) {
+                return snakeHeadUpImage;
+            } else if (direction.y === 1) {
+                return snakeHeadDownImage;
+            } else if (direction.x === -1) {
+                return snakeHeadLeftImage;
+            } else if (direction.x === 1) {
+                return snakeHeadRightImage;
+            }
+        }
+
+        function getBodyImage(index) {
+            // Sélectionnez l'image du corps en fonction de la direction et de la position dans le serpent
+            const prevSegment = snake[index - 1];
+            const currentSegment = snake[index];
+            if (prevSegment.x === currentSegment.x) {
+                if (prevSegment.y < currentSegment.y) {
+                    return snakeBodyDownImage;
+                } else {
+                    return snakeBodyUpImage;
+                }
+            } else {
+                if (prevSegment.x < currentSegment.x) {
+                    return snakeBodyRightImage;
+                } else {
+                    return snakeBodyLeftImage;
+                }
+            }
+        }
+
+        // Fonction pour mettre à jour le jeu
+        function update() {
+            // Déplacer le serpent en fonction de la direction
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            // Vérifier si le serpent mange la pomme
+            if (head.x === apple.x && head.y === apple.y) {
+                score++; // Augmenter le score
+                // Générer une nouvelle position pour la pomme
+                apple = {
+                    x: Math.floor(Math.random() * (canvasWidth / blockSize)),
+                    y: Math.floor(Math.random() * (canvasHeight / blockSize))
+                };
+            } else {
+                // Supprimer la queue du serpent
+                snake.pop();
+            }
+
+            // Vérifier les collisions avec les bords du canvas
+            if (head.x < 0 || head.x >= canvasWidth / blockSize || head.y < 0 || head.y >= canvasHeight / blockSize) {
+                gameOver(); // Fin de partie si collision avec les bords
+            }
+
+            // Vérifier les collisions avec le corps du serpent
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver(); // Fin de partie si collision avec le corps
+                }
+            }
+
+            // Ajouter la nouvelle tête du serpent
+            snake.unshift(head);
+        }
+
+        // Fonction appelée en cas de fin de partie
+        function gameOver() {
+            clearInterval(gameLoop); // Arrêter la boucle de jeu
+            alert("Game Over! Score: " + score); // Afficher un message d'alerte avec le score
+            window.location.reload(); // Recharger la page pour recommencer le jeu
+        }
+
+        // Gestion des touches du clavier pour changer la direction du serpent
+        document.addEventListener("keydown", function(event) {
+            const keyPressed = event.key;
+            switch (keyPressed) {
+                case "ArrowUp":
+                    if (previousDirection.y !== 1) {
+                        direction = {x: 0, y: -1};
+                    }
+                    break;
+                case "ArrowDown":
+                    if (previousDirection.y !== -1) {
+                        direction = {x: 0, y: 1};
+                    }
+                    break;
+                case "ArrowLeft":
+                    if (previousDirection.x !== 1) {
+                        direction = {x: -1, y: 0};
+                    }
+                    break;
+                case "ArrowRight":
+                    if (previousDirection.x !== -1) {
+                        direction = {x: 1, y: 0};
+                    }
+                    break;
+            }
+        });
+
+        // Boucle de jeu
+        let gameLoop = setInterval(function() {
+            // Mettre à jour la direction précédente
+            previousDirection = { x: direction.x, y: direction.y };
+            update();
+            draw();
+        }, 140);
+        
+    </script>
+</body>
+</html>

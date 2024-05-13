@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        #container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        canvas {
+            /* border: 1px solid #ff0000; */
+            transform: translate(-1%, 0%); /* Décalage de 1% vers la gauche et 1% vers le bas */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-image: url('CursedGrounds.gif'); /* Remplacez 'votre_fichier_gif_anime.gif' par le chemin de votre GIF */
+            background-size: cover; /* Ajuste la taille de l'image tout en conservant son ratio */
+            background-position: center; /* Centre l'image horizontalement et verticalement */
+            background-repeat: no-repeat; /* Répétition de l'image de fond sur l'axe horizontal et vertical */
+            overflow: hidden; /* Empêche le défilement de la page */
+        }
+
+        #score {
+            color: red; /* Changement de couleur en rouge */
+            font-size: 20.7px; /* Taille de la police ajustée pour s'adapter à la réduction de 10% */
+            font-weight: bold; /* Mise en gras */
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="gameCanvas" width="476" height="333.2"></canvas> <!-- Taille du canvas réduite de 30% -->
+    </div>
+    <!-- Ajoutez un élément audio pour le son de la pomme -->
+    <audio id="appleSound" src="1911.mp3"></audio>
+    <!-- Ajoutez un élément audio pour la musique d'ambiance -->
+    <audio id="backgroundMusic" src="1056.mp3" autoplay loop></audio>
+    <video src="video.mkv" autoplay muted loop></video>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const blockSize = 47.6; // Taille des blocs réduite de 30%
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        let snake = [{x: 5, y: 5}];
+        let apple = {x: Math.floor(Math.random() * (canvasWidth / blockSize)), y: Math.floor(Math.random() * (canvasHeight / blockSize))};
+        let direction = {x: 1, y: 0};
+        let score = 0;
+
+        // Variable pour garder une trace de la direction précédente
+        let previousDirection = {x: 1, y: 0};
+
+        // Charger les images
+        const snakeHeadUpImage = new Image();
+        snakeHeadUpImage.src = 'head_up.png';
+        const snakeHeadDownImage = new Image();
+        snakeHeadDownImage.src = 'head_down.png';
+        const snakeHeadLeftImage = new Image();
+        snakeHeadLeftImage.src = 'head_left.png';
+        const snakeHeadRightImage = new Image();
+        snakeHeadRightImage.src = 'head_right.png';
+        const snakeBodyLeftImage = new Image();
+        snakeBodyLeftImage.src = 'body_left.png';
+        const snakeBodyRightImage = new Image();
+        snakeBodyRightImage.src = 'body_right.png';
+        const snakeBodyUpImage = new Image();
+        snakeBodyUpImage.src = 'body_up.png';
+        const snakeBodyDownImage = new Image();
+        snakeBodyDownImage.src = 'body_down.png';
+
+        // Créer une balise <img> pour charger l'image de la pomme
+        const appleImg = new Image();
+        appleImg.src = 'images/apple.gif';
+
+        // Charger l'élément audio
+        const appleSound = document.getElementById("appleSound");
+
+        function draw() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            drawSnake();
+
+            // Dessinez l'image de la pomme à la position actuelle de la pomme
+            ctx.drawImage(appleImg, apple.x * blockSize, apple.y * blockSize, blockSize, blockSize);
+
+            ctx.fillStyle = "red"; // Changement de couleur en rouge
+            ctx.font = "bold 20.7px Arial"; // Taille de la police ajustée pour s'adapter à la réduction de 10% et mise en gras
+            ctx.fillText("Score: " + score, 15, 45); // Ajustement de la position du texte
+        }
+
+        function drawSnake() {
+            snake.forEach((segment, index) => {
+                let img;
+                if (index === 0) {
+                    img = getHeadImage();
+                } else {
+                    img = getBodyImage(index);
+                }
+                ctx.drawImage(img, segment.x * blockSize, segment.y * blockSize, blockSize, blockSize);
+            });
+        }
+
+        function getHeadImage() {
+            // Sélectionnez l'image de la tête en fonction de la direction
+            if (direction.y === -1) {
+                return snakeHeadUpImage;
+            } else if (direction.y === 1) {
+                return snakeHeadDownImage;
+            } else if (direction.x === -1) {
+                return snakeHeadLeftImage;
+            } else if (direction.x === 1) {
+                return snakeHeadRightImage;
+            }
+        }
+
+        function getBodyImage(index) {
+            // Sélectionnez l'image du corps en fonction de la direction et de la position dans le serpent
+            const prevSegment = snake[index - 1];
+            const currentSegment = snake[index];
+            if (prevSegment.x === currentSegment.x) {
+                if (prevSegment.y < currentSegment.y) {
+                    return snakeBodyDownImage;
+                } else {
+                    return snakeBodyUpImage;
+                }
+            } else {
+                if (prevSegment.x < currentSegment.x) {
+                    return snakeBodyRightImage;
+                } else {
+                    return snakeBodyLeftImage;
+                }
+            }
+        }
+
+        // Fonction pour mettre à jour le jeu
+        function update() {
+            // Déplacer le serpent en fonction de la direction
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            // Vérifier si le serpent mange la pomme
+            if (head.x === apple.x && head.y === apple.y) {
+                score++; // Augmenter le score
+                // Jouer le son de la pomme mangée
+                if (appleSound.paused) {
+                    appleSound.play();
+                } else {
+                    appleSound.currentTime = 0;
+                }
+                // Générer une nouvelle position pour la pomme
+                apple = {
+                    x: Math.floor(Math.random() * (canvasWidth / blockSize)),
+                    y: Math.floor(Math.random() * (canvasHeight / blockSize))
+                };
+
+                // Changer l'image de la tête du serpent pendant 0.5 seconde
+                const originalHeadImage = getHeadImage();
+                snakeHeadUpImage.src = 'head_up_alternative.png'; // Remplacer par le chemin de l'image alternative
+                snakeHeadDownImage.src = 'head_down_alternative.png'; // Remplacer par le chemin de l'image alternative
+                snakeHeadLeftImage.src = 'head_left_alternative.png'; // Remplacer par le chemin de l'image alternative
+                snakeHeadRightImage.src = 'head_right_alternative.png'; // Remplacer par le chemin de l'image alternative
+                setTimeout(() => {
+                    snakeHeadUpImage.src = 'head_up.png'; // Restaurer l'image d'origine
+                    snakeHeadDownImage.src = 'head_down.png'; // Restaurer l'image d'origine
+                    snakeHeadLeftImage.src = 'head_left.png'; // Restaurer l'image d'origine
+                    snakeHeadRightImage.src = 'head_right.png'; // Restaurer l'image d'origine
+                }, 500); // Modifier le délai à 500 millisecondes (0.5 seconde)
+            } else {
+                // Supprimer la queue du serpent
+                snake.pop();
+            }
+
+            // Vérifier les collisions avec les bords du canvas
+            if (head.x < 0 || head.x >= canvasWidth / blockSize || head.y < 0 || head.y >= canvasHeight / blockSize) {
+                gameOver(); // Fin de partie si collision avec les bords
+            }
+
+            // Vérifier les collisions avec le corps du serpent
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver(); // Fin de partie si collision avec le corps
+                }
+            }
+
+            // Ajouter la nouvelle tête du serpent
+            snake.unshift(head);
+        }
+
+        // Fonction appelée en cas de fin de partie
+        function gameOver() {
+            clearInterval(gameLoop); // Arrêter la boucle de jeu
+            alert("Game Over! Score: " + score); // Afficher un message d'alerte avec le score
+            window.location.reload(); // Recharger la page pour recommencer le jeu
+        }
+
+        // Gestion des touches du clavier pour changer la direction du serpent
+        document.addEventListener("keydown", function(event) {
+            const keyPressed = event.key;
+            switch (keyPressed) {
+                case "ArrowUp":
+                    if (previousDirection.y !== 1) {
+                        direction = {x: 0, y: -1};
+                    }
+                    break;
+                case "ArrowDown":
+                    if (previousDirection.y !== -1) {
+                        direction = {x: 0, y: 1};
+                    }
+                    break;
+                case "ArrowLeft":
+                    if (previousDirection.x !== 1) {
+                        direction = {x: -1, y: 0};
+                    }
+                    break;
+                case "ArrowRight":
+                    if (previousDirection.x !== -1) {
+                        direction = {x: 1, y: 0};
+                    }
+                    break;
+            }
+        });
+
+        // Boucle de jeu
+        let gameLoop = setInterval(function() {
+            // Mettre à jour la direction précédente
+            previousDirection = { x: direction.x, y: direction.y };
+            update();
+            draw();
+        }, 140);
+    </script>
+</body>
+</html>
