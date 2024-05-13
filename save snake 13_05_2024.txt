@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+</head>
+    <style>
+        #container {
+    display: flex; /* Propriété pour afficher les éléments en mode flexbox */
+    justify-content: center; /* Alignement horizontal des éléments au centre */
+    align-items: center; /* Alignement vertical des éléments au centre */
+    height: 100vh; /* Hauteur équivalente à 100% de la hauteur de la fenêtre */
+}
+
+canvas {
+    /* border: 1px solid #ff0000; */ /* Commentaire désactivant la bordure rouge */
+    transform: translate(-1%, 0%); /* Propriété pour décaler l'élément de 1% vers la gauche et le bas */
+}
+
+body {
+    margin: 0; /* Mise à zéro des marges extérieures */
+    padding: 0; /* Mise à zéro des marges intérieures */
+    background-image: url('CursedGrounds.gif'); /* Image de fond du corps */
+    background-size: cover; /* Ajustement de la taille de l'image de fond */
+    background-position: center; /* Positionnement de l'image de fond au centre */
+    background-repeat: no-repeat; /* Empêche la répétition de l'image de fond */
+    overflow: hidden; /* Empêche le défilement de la page */
+}
+
+#score {
+    color: red; /* Changement de couleur en rouge */
+    font-size: 20.7px; /* Taille de la police ajustée pour s'adapter à la réduction de 10% */
+    font-weight: bold; /* Mise en gras */
+}
+
+.game-over-dialog {
+    position: fixed; /* Position fixe par rapport à la fenêtre du navigateur */
+    top: 50%; /* Positionnement à 50% de la hauteur de la fenêtre */
+    left: 50%; /* Positionnement à 50% de la largeur de la fenêtre */
+    transform: translate(-50%, -50%); /* Décalage de -50% par rapport à la position initiale */
+    background-color: rgb(0, 0, 0); /* Couleur de fond en noir */
+    padding: 20px; /* Espacement intérieur de 20 pixels */
+    border-radius: 10px; /* Rayon de bordure de 10 pixels */
+    text-align: center; /* Alignement du texte au centre */
+    background-image: url('ddaenge-078a09b4-5d65-4491-bfed-7c8411aaa519.gif'); /* Chemin de l'image de fond */
+    background-size: 13vw; /* Ajuste la taille de l'image de fond */
+    background-repeat: no-repeat; /* Empêche la répétition de l'image de fond */
+    background-position: center; /* Positionnement de l'image de fond au centre */
+    height: 27vh; /* Hauteur de 27% de la hauteur de la fenêtre */
+    width: 10.5vw; /* Largeur de 10.5% de la largeur de la fenêtre */
+    color: red; /* Changement de couleur du texte en rouge */
+    font-size: 24.84px; /* Augmentation de la taille de la police de 20% */
+    font-weight: bold; /* Mise en gras */
+    display: flex; /* Propriété pour afficher les éléments en mode flexbox */
+    flex-direction: column; /* Direction des éléments en colonne */
+    justify-content: center; /* Alignement vertical des éléments au centre */
+    align-items: center; /* Alignement horizontal des éléments au centre */
+}
+
+.score-text {
+    margin-bottom: 20px; /* Marge inférieure de 20 pixels */
+}
+
+.restart-button {
+    padding: 10px 20px; /* Espacement intérieur de 10 pixels en haut et en bas, 20 pixels à gauche et à droite */
+    background-color: #000000b5; /* Couleur de fond semi-transparente */
+    color: white; /* Couleur du texte en blanc */
+    border: none; /* Suppression de la bordure */
+    border-radius: 5px; /* Rayon de bordure de 5 pixels */
+    cursor: pointer; /* Curseur de souris en pointeur */
+    font-size: 16px; /* Taille de la police de 16 pixels */
+}
+
+.restart-button:hover {
+    background-color: #ff0000; /* Couleur de fond au survol en rouge */
+}
+    </style>
+
+<body>
+    <div id="container">
+        <canvas id="gameCanvas" width="476" height="333.2"></canvas> <!-- Taille du canvas réduite de 30% -->
+    </div>
+    <!-- Ajoute un élément audio pour le son de la pomme -->
+    <audio id="appleSound" src="1911.mp3"></audio>
+    <!-- Ajoute un élément audio pour la musique d'ambiance -->
+    <audio id="backgroundMusic" src="1056.mp3" autoplay loop></audio>
+    <video src="video.mkv" autoplay muted loop></video>
+    <script>
+        const canvas = document.getElementById("gameCanvas"); // Récupère l'élément canvas du DOM par son ID
+const ctx = canvas.getContext("2d"); // Récupère le contexte de dessin 2D pour le canvas
+
+const blockSize = 47.6; // Définit la taille des blocs réduite de 30%
+const canvasWidth = canvas.width; // Largeur du canvas
+const canvasHeight = canvas.height; // Hauteur du canvas
+
+let snake = [{x: 5, y: 5}]; // Initialise le serpent avec une position de départ
+let apple = {x: Math.floor(Math.random() * (canvasWidth / blockSize)), y: Math.floor(Math.random() * (canvasHeight / blockSize))}; // Initialise la pomme à une position aléatoire
+let direction = {x: 1, y: 0}; // Initialise la direction du serpent
+let score = 0; // Initialise le score à zéro
+
+// Variable pour garder une trace de la direction précédente
+let previousDirection = {x: 1, y: 0};
+
+// Chargement des images pour le serpent et la pomme
+const snakeHeadUpImage = new Image();
+snakeHeadUpImage.src = 'head_up.png';
+const snakeHeadDownImage = new Image();
+snakeHeadDownImage.src = 'head_down.png';
+const snakeHeadLeftImage = new Image();
+snakeHeadLeftImage.src = 'head_left.png';
+const snakeHeadRightImage = new Image();
+snakeHeadRightImage.src = 'head_right.png';
+const snakeBodyLeftImage = new Image();
+snakeBodyLeftImage.src = 'body_left.png';
+const snakeBodyRightImage = new Image();
+snakeBodyRightImage.src = 'body_right.png';
+const snakeBodyUpImage = new Image();
+snakeBodyUpImage.src = 'body_up.png';
+const snakeBodyDownImage = new Image();
+snakeBodyDownImage.src = 'body_down.png';
+const appleImg = new Image();
+appleImg.src = 'images/apple.gif'; // Chargement de l'image de la pomme
+
+// Chargement de l'élément audio pour le son de la pomme
+const appleSound = document.getElementById("appleSound");
+
+function draw() {
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Efface le canvas
+
+    drawSnake(); // Dessine le serpent
+
+    // Dessine l'image de la pomme à sa position actuelle
+    ctx.drawImage(appleImg, apple.x * blockSize, apple.y * blockSize, blockSize, blockSize);
+
+    ctx.fillStyle = "red"; // Couleur du texte en rouge
+    ctx.font = "bold 20.7px Arial"; // Style de la police
+    ctx.fillText("Score: " + score, 15, 45); // Affiche le score
+}
+
+function drawSnake() {
+    // Parcourt chaque segment du serpent et dessine son image
+    snake.forEach((segment, index) => {
+        let img;
+        if (index === 0) {
+            img = getHeadImage();
+        } else {
+            img = getBodyImage(index);
+        }
+        ctx.drawImage(img, segment.x * blockSize, segment.y * blockSize, blockSize, blockSize);
+    });
+}
+
+function getHeadImage() {
+    // Sélectionne l'image de la tête en fonction de la direction
+    if (direction.y === -1) {
+        return snakeHeadUpImage;
+    } else if (direction.y === 1) {
+        return snakeHeadDownImage;
+    } else if (direction.x === -1) {
+        return snakeHeadLeftImage;
+    } else if (direction.x === 1) {
+        return snakeHeadRightImage;
+    }
+}
+
+function getBodyImage(index) {
+    // Sélectionne l'image du corps en fonction de la direction et de la position dans le serpent
+    const prevSegment = snake[index - 1];
+    const currentSegment = snake[index];
+    if (prevSegment.x === currentSegment.x) {
+        if (prevSegment.y < currentSegment.y) {
+            return snakeBodyDownImage;
+        } else {
+            return snakeBodyUpImage;
+        }
+    } else {
+        if (prevSegment.x < currentSegment.x) {
+            return snakeBodyRightImage;
+        } else {
+            return snakeBodyLeftImage;
+        }
+    }
+}
+
+function update() {
+    // Met à jour la position du serpent en fonction de la direction
+    const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+    // Vérifie si le serpent mange la pomme
+    if (head.x === apple.x && head.y === apple.y) {
+        score++; // Incrémente le score
+        if (appleSound.paused) {
+            appleSound.play(); // Joue le son de la pomme mangée
+        } else {
+            appleSound.currentTime = 0; // Rembobine le son si déjà en lecture
+        }
+        // Génère une nouvelle position pour la pomme
+        apple = {
+            x: Math.floor(Math.random() * (canvasWidth / blockSize)),
+            y: Math.floor(Math.random() * (canvasHeight / blockSize))
+        };
+
+        // Change l'image de la tête du serpent pendant 0.5 seconde
+        const originalHeadImage = getHeadImage();
+        snakeHeadUpImage.src = 'head_up_alternative.png';
+        snakeHeadDownImage.src = 'head_down_alternative.png';
+        snakeHeadLeftImage.src = 'head_left_alternative.png';
+        snakeHeadRightImage.src = 'head_right_alternative.png';
+        setTimeout(() => {
+            snakeHeadUpImage.src = 'head_up.png'; // Restaure l'image d'origine
+            snakeHeadDownImage.src = 'head_down.png'; // Restaure l'image d'origine
+            snakeHeadLeftImage.src = 'head_left.png'; // Restaure l'image d'origine
+            snakeHeadRightImage.src = 'head_right.png'; // Restaure l'image d'origine
+        }, 500); // Délai de 500 millisecondes (0.5 seconde)
+    } else {
+        snake.pop(); // Supprime le dernier segment du serpent s'il n'a pas mangé de pomme
+    }
+
+    // Vérifie les collisions avec les bords du canvas
+    if (head.x < 0 || head.x >= canvasWidth / blockSize || head.y < 0 || head.y >= canvasHeight / blockSize) {
+        gameOver(); // Termine le jeu si collision avec les bords
+    }
+
+    // Vérifie les collisions avec le corps du serpent
+    for (let i = 1; i < snake.length; i++) {
+        if (head.x === snake[i].x && head.y === snake[i].y) {
+            gameOver(); // Termine le jeu s'il y a collision avec le corps
+        }
+    }
+
+    // Ajoute la nouvelle tête du serpent
+    snake.unshift(head);
+}
+
+function gameOver() {
+    clearInterval(gameLoop); // Arrête la boucle de jeu
+
+    // Crée une boîte de dialogue de fin de jeu
+    const gameOverDialog = document.createElement('div');
+    gameOverDialog.classList.add('game-over-dialog');
+    gameOverDialog.innerHTML = "<div class='score-text'>Game Over! Score: " + score + "</div>";
+    document.body.appendChild(gameOverDialog);
+
+    // Ajoute un bouton de redémarrage
+    const restartButton = document.createElement('button');
+    restartButton.classList.add('restart-button');
+    restartButton.textContent = 'OK';
+    restartButton.addEventListener('click', restartGame);
+    gameOverDialog.appendChild(restartButton);
+
+    // Gestion des événements pour la touche "Entrée" et les touches directionnelles
+    document.addEventListener("keydown", handleKeyPress);
+}
+
+function restartGame() {
+    window.location.reload(); // Recharge la page pour redémarrer le jeu
+}
+
+function handleKeyPress(event) {
+    if (event.key === 'Enter' || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        restartGame(); // Redémarre le jeu si la touche "Entrée" ou une touche directionnelle est enfoncée
+    }
+}
+
+// Gestion des touches du clavier pour changer la direction du serpent
+document.addEventListener("keydown", function(event) {
+    const keyPressed = event.key;
+    switch (keyPressed) {
+        case "ArrowUp":
+            if (previousDirection.y !== 1) {
+                direction = {x: 0, y: -1};
+            }
+            break;
+        case "ArrowDown":
+            if (previousDirection.y !== -1) {
+                direction = {x: 0, y: 1};
+            }
+            break;
+        case "ArrowLeft":
+            if (previousDirection.x !== 1) {
+                direction = {x: -1, y: 0};
+            }
+            break;
+        case "ArrowRight":
+            if (previousDirection.x !== -1) {
+                direction = {x: 1, y: 0};
+            }
+            break;
+    }
+});
+
+// Boucle de jeu
+let gameLoop = setInterval(function() {
+    previousDirection = { x: direction.x, y: direction.y }; // Met à jour la direction précédente
+    update(); // Met à jour le jeu
+    draw(); // Dessine le jeu
+}, 140); // Délai de rafraîchissement de la boucle de jeu en millisecondes
+
+    </script>
+</body>
+</html>
