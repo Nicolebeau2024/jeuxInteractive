@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+</head>
+<html class="fondPage">
+    <style>
+        @font-face {
+    font-family: "police";
+    src: url(police.ttf);
+}
+
+p, li, h2 {font-family: "police";
+color: red;
+}
+.fondPage {
+    background-color:black ;
+}
+        #container {
+    display: flex; /* Propriété pour afficher les éléments en mode flexbox */
+    justify-content: center; /* Alignement horizontal des éléments au centre */
+    align-items: center; /* Alignement vertical des éléments au centre */
+    height: 100vh; /* Hauteur équivalente à 100% de la hauteur de la fenêtre */
+}
+
+canvas {
+     /*border: 1px solid #ff0000;  /* Commentaire désactivant la bordure rouge */
+     transform: translate(0%, -6%); /* Propriété pour décaler l'élément de 1% vers la gauche et le bas */
+}
+
+body {
+    margin: 0; /* Mise à zéro des marges extérieures */
+    padding: 0; /* Mise à zéro des marges intérieures */
+    
+    
+    overflow: hidden; /* Empêche le défilement de la page */
+}
+
+.backGround {
+    background-image: url('CursedGrounds.gif'); /* Image de fond du corps */
+    background-size: 1500px 800px; /* Ajustement de la taille de l'image de fond */
+    background-position: center; /* Positionnement de l'image de fond au centre */
+    background-repeat: no-repeat; /* Empêche la répétition de l'image de fond */
+    
+    
+}
+
+#score {
+    color: red; /* Changement de couleur en rouge */
+    font-size: 20.7px; /* Taille de la police ajustée pour s'adapter à la réduction de 10% */
+    font-weight: bold; /* Mise en gras */
+}
+
+.game-over-dialog {
+    position: fixed; /* Position fixe par rapport à la fenêtre du navigateur */
+    top: 50%; /* Positionnement à 50% de la hauteur de la fenêtre */
+    left: 50%; /* Positionnement à 50% de la largeur de la fenêtre */
+    transform: translate(-50%, -50%); /* Décalage de -50% par rapport à la position initiale */
+    background-color: rgba(0, 0, 0, 0.76); /* Couleur de fond en noir */
+    padding: 20px; /* Espacement intérieur de 20 pixels */
+    border-radius: 10px; /* Rayon de bordure de 10 pixels */
+    text-align: center; /* Alignement du texte au centre */
+    background-image: url('ddaenge-078a09b4-5d65-4491-bfed-7c8411aaa519.gif'); /* Chemin de l'image de fond */
+    background-size: 13vw; /* Ajuste la taille de l'image de fond */
+    background-repeat: no-repeat; /* Empêche la répétition de l'image de fond */
+    background-position: center; /* Positionnement de l'image de fond au centre */
+    height: 27vh; /* Hauteur de 27% de la hauteur de la fenêtre */
+    width: 20vw; /* Largeur de 10.5% de la largeur de la fenêtre */
+    color: red; /* Changement de couleur du texte en rouge */
+    font-size: 40px; /* Augmentation de la taille de la police de 20% */
+    font-weight: bold; /* Mise en gras */
+    display: flex; /* Propriété pour afficher les éléments en mode flexbox */
+    flex-direction: column; /* Direction des éléments en colonne */
+    justify-content: center; /* Alignement vertical des éléments au centre */
+    align-items: center; /* Alignement horizontal des éléments au centre */
+    font-family: "police";
+}
+
+.score-text {
+    margin-bottom: 20px; /* Marge inférieure de 20 pixels */
+    
+}
+
+.restart-button {
+    padding: 10px 20px; /* Espacement intérieur de 10 pixels en haut et en bas, 20 pixels à gauche et à droite */
+    background-color: #000000b5; /* Couleur de fond semi-transparente */
+    color: rgb(255, 0, 0); /* Couleur du texte en blanc */
+    border: none; /* Suppression de la bordure */
+    border-radius: 5px; /* Rayon de bordure de 5 pixels */
+    cursor: pointer; /* Curseur de souris en pointeur */
+    font-size: 16px; /* Taille de la police de 16 pixels */
+}
+
+.restart-button:hover {
+    background-color: #ff0000; /* Couleur de fond au survol en rouge */
+}
+
+#high-score-table {
+    position: absolute;
+    top: 28%;
+    left: 8%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.76);
+    padding: 20px;
+    border-radius: 2vh;
+  }
+
+  #high-score-table h2 {
+    margin-top: 0;
+  }
+
+  #high-score-table ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+    </style>
+
+<body>
+    <div id="container" class="backGround">
+        <canvas id="gameCanvas" width="476" height="333.2"></canvas> <!-- Taille du canvas réduite de 30% -->
+    </div>
+    <!-- Ajoute un élément audio pour le son de la pomme -->
+    <audio id="appleSound" src="1911.mp3"></audio>
+    <!-- Ajoute un élément audio pour la musique d'ambiance -->
+    <audio id="backgroundMusic" src="1056.mp3" autoplay loop></audio>
+    
+    
+    <div id="high-score-table">
+    <img style="height: 130px; width: 230px;" src="hightScores.gif" alt="hightScores.gif">
+    <ul style="padding: 0 10%;" id="high-score-list"></ul>
+    </div>
+
+
+    <script>
+        const canvas = document.getElementById("gameCanvas"); // Récupère l'élément canvas du DOM par son ID
+const ctx = canvas.getContext("2d"); // Récupère le contexte de dessin 2D pour le canvas
+
+const blockSize = 47.6; // Définit la taille des blocs
+const canvasWidth = canvas.width; // Largeur du canvas
+const canvasHeight = canvas.height; // Hauteur du canvas
+
+let snake = [{x: 5, y: 5}]; // Initialise le serpent avec une position de départ
+let apple = {x: Math.floor(Math.random() * (canvasWidth / blockSize)), y: Math.floor(Math.random() * (canvasHeight / blockSize))}; // Initialise la pomme à une position aléatoire
+let direction = {x: 1, y: 0}; // Initialise la direction du serpent
+let score = 0; // Initialise le score à zéro
+
+// Variable pour garder une trace de la direction précédente
+let previousDirection = {x: 1, y: 0};
+
+// Gestion des touches du clavier pour changer la direction du serpent
+document.addEventListener("keydown", function(event) {
+    const keyPressed = event.key;
+    switch (keyPressed) {
+        case "ArrowUp":
+            if (previousDirection.y !== 1) {
+                direction = {x: 0, y: -1};
+            }
+            break;
+        case "ArrowDown":
+            if (previousDirection.y !== -1) {
+                direction = {x: 0, y: 1};
+            }
+            break;
+        case "ArrowLeft":
+            if (previousDirection.x !== 1) {
+                direction = {x: -1, y: 0};
+            }
+            break;
+        case "ArrowRight":
+            if (previousDirection.x !== -1) {
+                direction = {x: 1, y: 0};
+            }
+            break;
+    }
+});
+
+// Chargement des images pour le serpent et la pomme
+const snakeHeadUpImage = new Image();
+snakeHeadUpImage.src = 'head_up.png';
+const snakeHeadDownImage = new Image();
+snakeHeadDownImage.src = 'head_down.png';
+const snakeHeadLeftImage = new Image();
+snakeHeadLeftImage.src = 'head_left.png';
+const snakeHeadRightImage = new Image();
+snakeHeadRightImage.src = 'head_right.png';
+const snakeBodyLeftImage = new Image();
+snakeBodyLeftImage.src = 'body_left.png';
+const snakeBodyRightImage = new Image();
+snakeBodyRightImage.src = 'body_right.png';
+const snakeBodyUpImage = new Image();
+snakeBodyUpImage.src = 'body_up.png';
+const snakeBodyDownImage = new Image();
+snakeBodyDownImage.src = 'body_down.png';
+const appleImg = new Image();
+appleImg.src = 'images/apple.gif'; // Chargement de l'image de la pomme
+
+// Chargement de l'élément audio pour le son de la pomme
+const appleSound = document.getElementById("appleSound");
+
+function draw() {
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Efface le canvas
+
+    drawSnake(); // Dessine le serpent
+
+    // Dessine l'image de la pomme à sa position actuelle
+    ctx.drawImage(appleImg, apple.x * blockSize, apple.y * blockSize, blockSize, blockSize);
+
+    // score dans le canvas
+    ctx.fillStyle = "red"; // Couleur du texte en rouge
+    ctx.font = "bold 20.7px police"; // Style de la police
+    ctx.fillText("Score: " + score, 360, 40); // Affiche le score
+}
+
+function drawSnake() {
+    // Parcourt chaque segment du serpent et dessine son image
+    snake.forEach((segment, index) => {
+        let img; // Déclare une variable pour stocker l'image à utiliser pour le segment
+
+        if (index === 0) {
+            // Si le segment est le premier du tableau (la tête du serpent),
+            // appelle la fonction getHeadImage() pour obtenir l'image à utiliser
+            img = getHeadImage();
+        } else {
+            // Sinon (pour tous les autres segments, qui font partie du corps du serpent),
+            // appelle la fonction getBodyImage() avec l'indice du segment dans le tableau
+            // pour obtenir l'image à utiliser
+            img = getBodyImage(index);
+        }
+
+        // Utilise la méthode drawImage() de l'objet de contexte de rendu 2D (ctx)
+        // pour dessiner l'image à la position du segment dans la grille du jeu,
+        // avec une taille égale à celle d'un bloc de la grille (blockSize)
+        ctx.drawImage(img, segment.x * blockSize, segment.y * blockSize, blockSize, blockSize);
+    });
+}
+
+
+function getHeadImage() {
+    // Sélectionne l'image de la tête en fonction de la direction
+    if (direction.y === -1) {
+        return snakeHeadUpImage;
+    } else if (direction.y === 1) {
+        return snakeHeadDownImage;
+    } else if (direction.x === -1) {
+        return snakeHeadLeftImage;
+    } else if (direction.x === 1) {
+        return snakeHeadRightImage;
+    }
+}
+
+function getBodyImage(index) {
+    // Sélectionne l'image du corps en fonction de la direction et de la position dans le serpent
+
+    // Récupère le segment précédent dans le tableau
+    const prevSegment = snake[index - 1];
+
+    // Récupère le segment actuel dans le tableau
+    const currentSegment = snake[index];
+
+    // Vérifie si les coordonnées x des deux segments sont les mêmes
+    // (ce qui signifie que le serpent se déplace verticalement)
+    if (prevSegment.x === currentSegment.x) {
+
+        // Vérifie si le segment précédent a une coordonnée y inférieure à celle du segment actuel
+        // (ce qui signifie que le serpent se déplace vers le bas)
+        if (prevSegment.y < currentSegment.y) {
+
+            // Retourne l'image du corps du serpent orientée vers le bas
+            return snakeBodyDownImage;
+
+        // Sinon (si le segment précédent a une coordonnée y supérieure à celle du segment actuel),
+        // cela signifie que le serpent se déplace vers le haut
+        } else {
+
+            // Retourne l'image du corps du serpent orientée vers le haut
+            return snakeBodyUpImage;
+        }
+
+    // Sinon (si les coordonnées x des deux segments sont différentes),
+    // cela signifie que le serpent se déplace horizontalement
+    } else {
+
+        // Vérifie si le segment précédent a une coordonnée x inférieure à celle du segment actuel
+        // (ce qui signifie que le serpent se déplace vers la droite)
+        if (prevSegment.x < currentSegment.x) {
+
+            // Retourne l'image du corps du serpent orientée vers la droite
+            return snakeBodyRightImage;
+
+        // Sinon (si le segment précédent a une coordonnée x supérieure à celle du segment actuel),
+        // cela signifie que le serpent se déplace vers la gauche
+        } else {
+
+            // Retourne l'image du corps du serpent orientée vers la gauche
+            return snakeBodyLeftImage;
+        }
+    }
+}
+
+
+function update() {
+    // Met à jour la position du serpent en fonction de la direction
+    const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+    // Vérifie si le serpent mange la pomme
+    if (head.x === apple.x && head.y === apple.y) {
+        score++; // Incrémente le score
+        if (appleSound.paused) {
+            appleSound.play(); // Joue le son de la pomme mangée
+        } else {
+            appleSound.currentTime = 0; // Rembobine le son si déjà en lecture
+        }
+        // Génère une nouvelle position pour la pomme
+        apple = {
+            x: Math.floor(Math.random() * (canvasWidth / blockSize)),
+            y: Math.floor(Math.random() * (canvasHeight / blockSize))
+        };
+
+        // Change l'image de la tête du serpent pendant 0.5 seconde
+        const originalHeadImage = getHeadImage();
+        snakeHeadUpImage.src = 'head_up_alternative.png';
+        snakeHeadDownImage.src = 'head_down_alternative.png';
+        snakeHeadLeftImage.src = 'head_left_alternative.png';
+        snakeHeadRightImage.src = 'head_right_alternative.png';
+        setTimeout(() => {
+            snakeHeadUpImage.src = 'head_up.png'; // Restaure l'image d'origine
+            snakeHeadDownImage.src = 'head_down.png'; // Restaure l'image d'origine
+            snakeHeadLeftImage.src = 'head_left.png'; // Restaure l'image d'origine
+            snakeHeadRightImage.src = 'head_right.png'; // Restaure l'image d'origine
+        }, 500); // Délai de 500 millisecondes (0.5 seconde)
+    } else {
+        snake.pop(); // Supprime le dernier segment du serpent s'il n'a pas mangé de pomme
+    }
+
+    // Vérifie les collisions avec les bords du canvas
+    if (head.x < 0 || head.x >= canvasWidth / blockSize || head.y < 0 || head.y >= canvasHeight / blockSize) {
+        gameOver(); // Termine le jeu si collision avec les bords
+    }
+
+    // Vérifie les collisions avec le corps du serpent
+    for (let i = 1; i < snake.length; i++) {
+        if (head.x === snake[i].x && head.y === snake[i].y) {
+            gameOver(); // Termine le jeu s'il y a collision avec le corps
+        }
+    }
+
+    // Ajoute la nouvelle tête du serpent
+    snake.unshift(head);
+}
+
+
+// debut de high score
+
+// Vérifier si des high scores existent déjà dans le localStorage
+// Déclare une variable pour stocker les meilleurs scores
+let highScores;
+
+// Vérifie si la clé "highScores" existe dans localStorage
+if (localStorage.getItem("highScores")) {
+
+  // Récupère la valeur associée à la clé "highScores" dans localStorage
+  // et analyse la chaîne JSON en un objet JavaScript
+  highScores = JSON.parse(localStorage.getItem("highScores"));
+
+} else {
+
+  // Si la clé "highScores" n'existe pas dans localStorage,
+  // initialise la variable highScores à un tableau vide
+  highScores = [];
+
+}
+
+
+
+function addHighScore() {
+  // Vérifier si le score du joueur est supérieur ou égal au plus petit score du tableau des high scores
+  // en utilisant une expression conditionnelle ternaire
+
+  // Déclare une constante pour stocker le score le plus faible dans le tableau highScores,
+  // ou 0 si le tableau est vide
+  const smallestHighScore = highScores.length > 0
+
+    // Si le tableau highScores a au moins un élément (highScores.length > 0),
+    // renvoie la valeur du score le plus faible (highScores[highScores.length - 1].score) (Dans cette ligne de code, le caractère ? est utilisé dans le cadre d'une expression conditionnelle ternaire.)
+    ? highScores[highScores.length - 1].score
+
+    // Sinon (si le tableau highScores est vide), renvoie 0
+    : 0;
+
+  // Vérifie si le score du joueur (score) est supérieur ou égal au score le plus faible (smallestHighScore)
+  // en utilisant une instruction if
+  if (score >= smallestHighScore) {
+
+    // Affiche une boîte de dialogue pour demander le nom du joueur
+    // en utilisant la méthode prompt()
+    // et stocke le nom dans une constante (playerName)
+    const playerName = prompt("New High Score ! Entre ton nom :");
+
+    /* Vérifier si le joueur a entré un nom d'au moins 3 caractères (l'expression régulière /^.{3,}$/ vérifie si la chaîne de texte (le nom du joueur) contient au moins 3 caractères. Le point . représente n'importe quel caractère, et {3,} indique que ce caractère doit se répéter au moins 3 fois. Les ancres ^ et $ garantissent que la chaîne entière est vérifiée.
+    Si le nom entré par le joueur ne correspond pas à l'expression régulière, un message d'erreur s'affiche et la fonction addHighScore() est à nouveau appelée pour demander le nom.) */
+    const nameRegex = /^.{3,}$/;
+    if (playerName !== null && playerName !== "" && nameRegex.test(playerName)) {
+      const newHighScore = { name: playerName, score: score };
+      highScores.push(newHighScore);
+
+      // Trier les high scores par ordre décroissant
+      highScores.sort((a, b) => b.score - a.score);
+
+      // Limiter le tableau à 10 high scores
+      highScores = highScores.slice(0, 10);
+
+      // Enregistrer les high scores dans le localStorage
+      localStorage.setItem("highScores", JSON.stringify(highScores));
+
+      // Afficher les high scores mis à jour
+      displayHighScores();
+    } else {
+      // Afficher un message d'erreur ou demander à nouveau le nom si la condition n'est pas remplie
+      alert("Veuillez entrer un nom d'au moins 3 caractères.");
+      addHighScore();
+    }
+  }
+}
+
+
+
+
+function displayHighScores() {
+  // Récupère la balise HTML <ul> avec l'ID "high-score-list" et la stocke dans la constante "highScoreList"
+  const highScoreList = document.getElementById("high-score-list");
+
+  // Vide le contenu HTML de la balise "highScoreList" pour effacer les anciens high scores affichés
+  highScoreList.innerHTML = '';
+
+  // Parcourt chaque objet "highScore" dans le tableau "highScores" à l'aide de la méthode "forEach"
+  highScores.forEach((highScore) => {
+    // Crée une nouvelle balise HTML <li> et la stocke dans la constante "listItem"
+    const listItem = document.createElement("li");
+
+    // Définit le texte contenu dans la balise "listItem" en utilisant le nom et le score de l'objet "highScore" actuel
+    listItem.textContent = `${highScore.name} : ${highScore.score}`;
+
+    // Ajoute la balise "listItem" en tant qu'enfant de la balise "highScoreList" pour afficher le high score dans la liste
+    highScoreList.appendChild(listItem);
+  });
+}
+
+
+// Appeler la fonction pour afficher les high scores
+displayHighScores();
+
+
+
+
+function gameOver() {
+    clearInterval(gameLoop); // Arrête la boucle de jeu
+
+    // afficher les high scores mis à jour :
+    displayHighScores();
+
+    // Crée une boîte de dialogue de fin de jeu
+
+// Crée un nouvel élément HTML 'div' et le stocke dans la variable 'gameOverDialog'
+const gameOverDialog = document.createElement('div');
+
+// Ajoute la classe CSS 'game-over-dialog' à l'élément 'gameOverDialog'
+gameOverDialog.classList.add('game-over-dialog');
+
+// Définit le contenu HTML de l'élément 'gameOverDialog' avec le message de fin de jeu et le score du joueur
+gameOverDialog.innerHTML = "<div class='score-text'>Game Over <br>Score: " + score + "</div>";
+
+// Appelle la fonction 'addHighScore' pour ajouter le score du joueur à la liste des meilleurs scores s'il est suffisamment élevé
+addHighScore();
+
+// Ajoute l'élément 'gameOverDialog' à la fin du corps de la page HTML
+document.body.appendChild(gameOverDialog);
+
+
+   // Ajoute un bouton de redémarrage
+
+// Crée un élément de bouton et le stocke dans la variable 'restartButton'
+const restartButton = document.createElement('button');
+
+// Ajoute la classe CSS 'restart-button' à l'élément 'restartButton'
+restartButton.classList.add('restart-button');
+
+// Définit le texte du bouton comme 'OK'
+restartButton.textContent = 'OK';
+
+// Ajoute un écouteur d'événements 'click' sur le bouton qui appelle la fonction 'restartGame'
+restartButton.addEventListener('click', restartGame);
+
+// Ajoute le bouton de redémarrage à la boîte de dialogue de fin de jeu
+gameOverDialog.appendChild(restartButton);
+
+
+    // Gestion des événements pour la touche "Entrée" et les touches directionnelles
+    document.addEventListener("keydown", handleKeyPress);
+}
+
+
+function restartGame() {
+    window.location.reload(); // Recharge la page pour redémarrer le jeu
+}
+
+function handleKeyPress(event) {
+    if (event.key === 'Enter' || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        restartGame(); // Redémarre le jeu si la touche "Entrée" ou une touche directionnelle est enfoncée
+    }
+}
+
+// Boucle de jeu
+let gameLoop = setInterval(function() {
+    previousDirection = { x: direction.x, y: direction.y }; // Met à jour la direction précédente
+    update(); // Met à jour le jeu
+    draw(); // Dessine le jeu
+}, 140); // Délai de rafraîchissement de la boucle de jeu en millisecondes
+
+    </script>
+</body>
+</html>
